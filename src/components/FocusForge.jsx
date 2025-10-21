@@ -2,21 +2,40 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from 'framer-motion';
 import MyButton from "./ui/MyButton";
 import Modal from "./Modal";
-
+import { SOUND_BANK } from '../constants/sound.js'
+ 
 export default function FocusForge () {
 
     const minArr = [0.1 , 5, 15, 20, 25, 30, 40, 45];
     
     const [settingOpen, setSettingOpen] = useState (false);
+    const [selectedSound, setSelectedSound] = useState ('ping');
 
     const [minutes, setMinutes ] = useState (25);
+    
+    const [ volume, setVolume ] = useState (100);
+    const [ savedVolume, setSavedVolume ] = useState (100);
     
     const [ remainingMs, setRemainingMs ] = useState(minutes * 60_000)
     const [ running, setRunning ] = useState (false);
 
-    const ping = useRef (new Audio ('/sounds/ping.mp3'))
+    const ping = useRef (new Audio (SOUND_BANK[selectedSound].path))
+
     const rafRef = useRef (null);
     const lastTsRef = useRef (null);
+
+    useEffect (() =>  {
+        ping.current = new Audio (SOUND_BANK[selectedSound].path);
+        ping.current.volume = savedVolume / 100;
+    }, [selectedSound, savedVolume])
+    
+    useEffect (() => {
+        ping.current.volume = savedVolume / 100;
+    }, [])
+    
+    useEffect (() => {
+        ping.current.volume = savedVolume / 100;
+    }, [savedVolume])
 
     useEffect (() => {
         if (!running) setRemainingMs (minutes * 60_000)
@@ -35,6 +54,7 @@ export default function FocusForge () {
                 if (prev > 0 && next === 0) {
                     setRunning (false);
                     lastTsRef.current = null;
+                    ping.current.volume = savedVolume/100;
                     ping.current.currentTime = 0;
                     ping.current.play().catch(() => {})
                 } 
@@ -54,8 +74,13 @@ export default function FocusForge () {
 
     function toggleStart () {
         setRunning ((r) => !r);
+        ping.current.volume = savedVolume/100;
         ping.current.currentTime = 0;
         ping.current.play().catch(() => {})
+    }
+    function previewStart () {
+        ping.current.volume = savedVolume / 100;
+        ping.current.play().catch (() => {})
     }
 
     const totalSec = Math.ceil(remainingMs / 1000); 
@@ -72,6 +97,11 @@ export default function FocusForge () {
     }
 
     const onClose = () => setSettingOpen (false)  
+    const onSettingVolume = (e) => setVolume(Number(e.target.value));
+    const handleSave = () => {
+        setSavedVolume (volume);
+        onClose ();
+    }
         
     return (
         <div>
@@ -104,6 +134,12 @@ export default function FocusForge () {
                
             <MyButton
                 onClick={() => toggleStart()}
+                onKeyDown= {(e) => {
+                    if (e.key === 'Space') {
+                        e.preventDefault();
+                        toggleStart ();
+                    }
+                }}
             >
                 {running  ? '⏸ Пауза' : '▶️ Старт'}
             </MyButton>
@@ -116,8 +152,17 @@ export default function FocusForge () {
                 onClick={() => setSettingOpen(true)}
             >Настройки</MyButton>
 
-            <Modal onClose={onClose} open={settingOpen}></Modal>
-
+            <Modal 
+                onClose={onClose} 
+                open={settingOpen}
+                volume={volume}
+                onSettingVolume={onSettingVolume}
+                onSave={handleSave}
+                soundBank={SOUND_BANK}
+                selectedSound={selectedSound}
+                onSelectedSound={(id) => setSelectedSound (id)}
+                onPlay={previewStart}></Modal>
+                
 
         </div>
     )
