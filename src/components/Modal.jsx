@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import MyButtonWhite from "./ui/MyButtonWhite";
-import MyButton from "./ui/MyButton";
 
 export default function Modal ({onClose, open, volume, onSettingVolume, onSave, soundBank, selectedSound, onSelectedSound, onPlay}) {
 

@@ -4,3 +4,4 @@ export const SOUND_BANK = {
     wood : {label : 'wood', path : '../public/sounds/wood.mp3'},
     chime : {label : 'chime', path : '../public/sounds/chime.mp3'}
 }
+

@@ -3,52 +3,54 @@ import { motion } from 'framer-motion';
 import MyButton from "./ui/MyButton";
 import Modal from "./Modal";
 import { SOUND_BANK } from '../constants/sound.js'
+import useLocalStorageV2 from "../hooks/useLocalStorageV2.js";
  
 export default function FocusForge () {
 
     const minArr = [0.1 , 5, 15, 20, 25, 30, 40, 45];
     
     const [settingOpen, setSettingOpen] = useState (false);
-    const [selectedSound, setSelectedSound] = useState ('ping');
+
+    
+    const [ selectedSound, setSelectedSound ] = useLocalStorageV2 ('ff:sound', 'ping');
+    const [ volume, setVolume ] = useLocalStorageV2 ('ff:volume', '90');
 
     const [minutes, setMinutes ] = useState (25);
     
-    const [ volume, setVolume ] = useState (100);
     const [ savedVolume, setSavedVolume ] = useState (100);
     
     const [ remainingMs, setRemainingMs ] = useState(minutes * 60_000)
     const [ running, setRunning ] = useState (false);
 
-    const ping = useRef (new Audio (SOUND_BANK[selectedSound].path))
+    const ping = useRef (new Audio ())
 
     const rafRef = useRef (null);
     const lastTsRef = useRef (null);
 
-    useEffect (() =>  {
-        ping.current = new Audio (SOUND_BANK[selectedSound].path);
-        ping.current.volume = savedVolume / 100;
-    }, [selectedSound, savedVolume])
-    
     useEffect (() => {
-        ping.current.volume = savedVolume / 100;
+        setSavedVolume (Number(volume))
     }, [])
     
     useEffect (() => {
-        ping.current.volume = savedVolume / 100;
-    }, [savedVolume])
-
+        if (!ping.current) return;
+        ping.current.src = SOUND_BANK[selectedSound].path;
+        ping.current.volume = Math.min(Math.max (savedVolume / 100, 0), 1)
+    }, [selectedSound, savedVolume])
+    
+    const onSettingVolume = (e) => setVolume(e.target.value);
+    
     useEffect (() => {
         if (!running) setRemainingMs (minutes * 60_000)
-    }, [minutes]);
-
+        }, [minutes]);
+    
     useEffect (() => {
         if (!running) return;
-
+        
         const loop = (ts) => {
             const last = lastTsRef.current ?? ts;
             const delta = ts - last;
             lastTsRef.current = ts;
-
+            
             setRemainingMs (prev => {
                 const next = Math.max (0, prev - delta);
                 if (prev > 0 && next === 0) {
@@ -70,7 +72,7 @@ export default function FocusForge () {
             cancelAnimationFrame (rafRef.current);
             lastTsRef.current = null;
         }
-    }, [running])
+    }, [running, savedVolume])
 
     function toggleStart () {
         setRunning ((r) => !r);
@@ -79,7 +81,8 @@ export default function FocusForge () {
         ping.current.play().catch(() => {})
     }
     function previewStart () {
-        ping.current.volume = savedVolume / 100;
+        ping.current.volume = Math.min (Math.max(Number(volume) / 100 ));
+
         ping.current.play().catch (() => {})
     }
 
@@ -97,12 +100,12 @@ export default function FocusForge () {
     }
 
     const onClose = () => setSettingOpen (false)  
-    const onSettingVolume = (e) => setVolume(Number(e.target.value));
+    
     const handleSave = () => {
-        setSavedVolume (volume);
+        setSavedVolume (Number (volume));
         onClose ();
     }
-        
+    
     return (
         <div>
             <div className="my-15 text-9xl">
